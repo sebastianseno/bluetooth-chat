@@ -15,7 +15,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.myapplication.domain.ConnectionState
@@ -61,7 +60,10 @@ fun DeviceScanScreen(
                 }
             }
         }
-        Column( modifier = Modifier.align(Alignment.BottomCenter), verticalArrangement = Arrangement.spacedBy(15.dp)) {
+        Column(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            verticalArrangement = Arrangement.spacedBy(15.dp)
+        ) {
             if (state.value.pairedDevices.isNotEmpty()) {
                 BlueFloatingButton(
                     label = "Start Chat"
@@ -69,8 +71,7 @@ fun DeviceScanScreen(
                     onNavigate("null")
                 }
             }
-            FloatingButton(
-            ) {
+            FloatingButton {
                 viewModel.startScan()
             }
         }

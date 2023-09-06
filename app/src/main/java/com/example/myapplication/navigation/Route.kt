@@ -6,7 +6,7 @@ sealed class Route(val route: String) {
         fun passData(
             deviceAddress: String,
         ): String {
-           return "chat_screen?device_address=$deviceAddress"
+            return "chat_screen?device_address=$deviceAddress"
         }
     }
 }

@@ -25,22 +25,11 @@ class ActionPairingRequestReceiver : BroadcastReceiver() {
                         intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
                     }
                     val pin = intent.getIntExtra("android.bluetooth.device.extra.PAIRING_KEY", 0)
-                    //the pin in case you need to accept for an specific pin
-
                     Log.d("Bonded", device!!.name)
                     val pinBytes = ("$pin").toByteArray(charset("UTF-8"))
                     device.setPin(pinBytes)
-                    //setPairing confirmation if neeeded
                     device.setPairingConfirmation(true)
                     device.createBond()
-//                    val type = intent.getIntExtra(
-//                        BluetoothDevice.EXTRA_PAIRING_VARIANT,
-//                        BluetoothDevice.ERROR
-//                    )
-//                    Log.d(
-//                        "senooPin1",
-//                        type.toString()
-//                    )
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }

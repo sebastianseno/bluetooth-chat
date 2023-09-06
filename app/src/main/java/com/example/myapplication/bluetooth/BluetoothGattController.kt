@@ -66,6 +66,7 @@ class BluetoothGattController @Inject constructor(
                 BluetoothProfile.STATE_CONNECTED -> {
                     connectMessage.value = ConnectionState.CONNECTED
                 }
+
                 BluetoothProfile.STATE_DISCONNECTING -> connectMessage.value =
                     ConnectionState.DISCONNECTING
 
@@ -100,6 +101,7 @@ class BluetoothGattController @Inject constructor(
     init {
         updatePairedDevices()
     }
+
     override fun startDiscovery() {
         if (hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
             context.registerReceiver(
@@ -112,7 +114,7 @@ class BluetoothGattController @Inject constructor(
     }
 
     override fun stopDiscovery() {
-        if(!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
+        if (!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
             return
         }
         bluetoothAdapter?.cancelDiscovery()
@@ -252,8 +254,9 @@ class BluetoothGattController @Inject constructor(
     companion object {
         const val SERVICE_UUID = "27b7d1da-08c7-4505-a6d1-2459987e5e2d"
     }
+
     private fun updatePairedDevices() {
-        if(!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
+        if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
             return
         }
         bluetoothAdapter

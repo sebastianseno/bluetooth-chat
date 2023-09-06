@@ -11,7 +11,7 @@ import com.example.myapplication.R
 val NunitoFont = FontFamily(
     Font(R.font.nunito, weight = FontWeight.Normal),
 
-)
+    )
 
 // Set of Material typography styles to start with
 val Typography = Typography(

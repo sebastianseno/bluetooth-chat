@@ -17,7 +17,7 @@ import com.example.myapplication.presentation.theme.SoftGray
 @Composable
 fun FloatingButton(
     modifier: Modifier = Modifier,
-    label : String = "Scan Now",
+    label: String = "Scan Now",
     onClick: () -> Unit
 ) {
     Button(

@@ -7,8 +7,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.myapplication.extension.navigateTo
 import com.example.myapplication.presentation.screen.chat.ChatScreen
-import com.example.myapplication.presentation.screen.viewmodel.BluetoothViewModel
 import com.example.myapplication.presentation.screen.devicescan.DeviceScanScreen
+import com.example.myapplication.presentation.screen.viewmodel.BluetoothViewModel
 
 fun NavGraphBuilder.addNavigationGraph(
     navController: NavHostController,

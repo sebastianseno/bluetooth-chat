@@ -39,9 +39,11 @@ fun Device(
         }
         Spacer(modifier = Modifier.width(8.dp))
         Surface(
-            modifier = Modifier.weight(1f).clickable {
-                onClick()
-            },
+            modifier = Modifier
+                .weight(1f)
+                .clickable {
+                    onClick()
+                },
             color = Blue,
             shape = RoundedCornerShape(10.dp),
             elevation = 0.dp

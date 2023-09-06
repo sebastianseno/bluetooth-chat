@@ -1,4 +1,4 @@
-package com.example.myapplication.domain;
+package com.example.myapplication.domain
 
 enum class ConnectionState {
     CONNECTED,

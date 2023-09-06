@@ -90,6 +90,7 @@ class BluetoothViewModel @Inject constructor(
                         )
                     }
                 }
+
                 is ConnectionResult.TransferSucceeded -> {
                     _state.update {
                         it.copy(
@@ -97,6 +98,7 @@ class BluetoothViewModel @Inject constructor(
                         )
                     }
                 }
+
                 is ConnectionResult.Error -> {
                     _state.update {
                         it.copy(
