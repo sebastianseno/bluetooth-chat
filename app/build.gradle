@@ -1,8 +1,8 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
-    id 'dagger.hilt.android.plugin'
     id 'kotlin-kapt'
+    id 'dagger.hilt.android.plugin'
 }
 
 android {
@@ -54,8 +54,12 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.10.1'
     implementation "androidx.compose.ui:ui"
     implementation "androidx.compose.material:material"
-    implementation 'com.google.android.material:material:1.9.0'
     implementation "androidx.compose.ui:ui-tooling-preview"
+    implementation 'androidx.activity:activity-compose'
+
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
+    implementation "androidx.lifecycle:lifecycle-runtime-compose:2.6.1"
+    implementation 'com.android.support:multidex:1.0.3'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
@@ -65,8 +69,11 @@ dependencies {
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_ui_version"
     debugImplementation "androidx.compose.ui:ui-test-manifest:$compose_ui_version"
 
-    implementation "androidx.hilt:hilt-navigation-compose:$hilt_compose_navigation_version"
     implementation "com.google.dagger:hilt-android:$hilt_version"
     kapt "com.google.dagger:hilt-compiler:$hilt_version"
+    androidTestImplementation "com.google.dagger:hilt-android-testing:$hilt_version"
     annotationProcessor "com.google.dagger:dagger-android-processor:2.11"
+    implementation "androidx.hilt:hilt-navigation-compose:$hilt_compose_navigation_version"
+
+    implementation 'com.google.code.gson:gson:2.9.0'
 }

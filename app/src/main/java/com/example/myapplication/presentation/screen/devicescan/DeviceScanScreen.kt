@@ -1,29 +1,48 @@
 package com.example.myapplication.presentation.screen.devicescan
 
-import android.util.Log
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.myapplication.domain.ConnectionState
 import com.example.myapplication.presentation.components.Device
 import com.example.myapplication.presentation.components.FloatingButton
-import com.example.myapplication.presentation.screen.BluetoothViewModel
 
 @Composable
-fun DeviceScanScreen() {
-    val viewModel = hiltViewModel<BluetoothViewModel>()
+fun DeviceScanScreen(
+    viewModel: BluetoothViewModel = hiltViewModel(),
+    onNavigate: (address: String) -> Unit
+) {
     val state = viewModel.state.collectAsState()
 
-    Box(Modifier.padding(18.dp)) {
-        Column {
-            Log.d("senoo",  state.value.scannedDevices.toString())
+    LaunchedEffect(state.value.connectionStatus) {
+        if (state.value.connectionStatus == ConnectionState.CONNECTED) {
+            onNavigate("")
+        }
+    }
+    Box(
+        Modifier
+            .padding(18.dp)
+            .fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
             state.value.scannedDevices.forEach {
-                Device(deviceName = it.name ?: "Tidak dikenal", )
+                Device(
+                    deviceName = it.name ?: it.address ?: "Tidak dikenal",
+                ) {
+                    viewModel.connectToDevice(it)
+                }
             }
         }
         FloatingButton(

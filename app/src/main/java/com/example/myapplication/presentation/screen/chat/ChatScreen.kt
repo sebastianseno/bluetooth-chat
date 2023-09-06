@@ -3,6 +3,7 @@ package com.example.myapplication.presentation.screen.chat
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Icon
@@ -23,41 +24,46 @@ import androidx.compose.ui.unit.dp
 import com.example.myapplication.R
 import com.example.myapplication.domain.MessageDataClass
 import com.example.myapplication.presentation.components.ChatBubble
+import com.example.myapplication.presentation.screen.devicescan.BluetoothViewModel
+import com.example.myapplication.presentation.theme.Blue
 
 @Composable
-fun ChatScreen() {
+fun ChatScreen(
+    viewModel: BluetoothViewModel
+) {
     val message = rememberSaveable {
         mutableStateOf("")
     }
-    Scaffold {
-        Box {
-            Column {
-                ChatBubble(modifier = Modifier.padding(it), message = MessageDataClass())
-            }
-            Surface {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextField(
-                        value = message.value,
-                        onValueChange = { message.value = it },
-                        modifier = Modifier.weight(1f),
-                        placeholder = {
-                            Text(text = "Message")
-                        }
-                    )
-                    IconButton(onClick = {
-                        message.value = ""
-                    }) {
-                        Icon(
-
-                            painter = painterResource(id = R.drawable.ic_send),
-                            contentDescription = "Send message"
-                        )
+    Box(Modifier.fillMaxSize()) {
+        Column {
+            ChatBubble(message = MessageDataClass())
+        }
+        Surface(
+            modifier = Modifier.align(
+                alignment = Alignment.BottomCenter
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            ) {
+                TextField(
+                    value = message.value,
+                    onValueChange = { message.value = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = {
+                        Text(text = "Message")
                     }
+                )
+                IconButton(onClick = {
+                    message.value = ""
+                }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_send),
+                        tint = Blue,
+                        contentDescription = "Send message"
+                    )
                 }
             }
         }

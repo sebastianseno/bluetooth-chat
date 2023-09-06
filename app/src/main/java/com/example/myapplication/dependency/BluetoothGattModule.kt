@@ -1,5 +1,6 @@
 package com.example.myapplication.dependency
 
+import android.app.Application
 import android.content.Context
 import com.example.myapplication.bluetooth.BluetoothGattController
 import dagger.Module
@@ -15,7 +16,7 @@ object BluetoothGattModule {
 
     @Singleton
     @Provides
-    fun provideBluetoothController(@ApplicationContext context: Context) =
-        BluetoothGattController(context)
+    fun provideBluetoothController(@ApplicationContext context: Context, application: Application) =
+        BluetoothGattController(context, application)
 
 }
