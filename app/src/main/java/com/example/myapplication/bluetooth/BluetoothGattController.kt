@@ -8,30 +8,46 @@ import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
-import android.bluetooth.le.ScanCallback
-import android.bluetooth.le.ScanResult
+import android.bluetooth.BluetoothServerSocket
+import android.bluetooth.BluetoothSocket
 import android.content.Context
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.util.Log
 import com.example.myapplication.domain.BluetoothDeviceDataClass
+import com.example.myapplication.domain.ConnectionResult
 import com.example.myapplication.domain.ConnectionState
+import com.example.myapplication.domain.MessageDataClass
 import com.example.myapplication.mapper.toBluetoothDeviceDomain
+import com.example.myapplication.mapper.toByteArray
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.update
+import java.io.IOException
+import java.util.UUID
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 
 @SuppressLint("MissingPermission")
 class BluetoothGattController @Inject constructor(
     private val context: Context,
-    private val application: Application
+    private val application: Application,
 ) : BluetoothController {
 
     private val _isConnected = MutableStateFlow(false)
 
+    private var dataTransferService: BluetoothDataTransferService? = null
+    private var currentServerSocket: BluetoothServerSocket? = null
+    private var currentClientSocket: BluetoothSocket? = null
     private val bluetoothManager by lazy {
         context.getSystemService(BluetoothManager::class.java)
     }
@@ -51,6 +67,7 @@ class BluetoothGattController @Inject constructor(
                 BluetoothProfile.STATE_CONNECTED -> {
                     connectMessage.value = ConnectionState.CONNECTED
                 }
+
                 BluetoothProfile.STATE_DISCONNECTING -> connectMessage.value =
                     ConnectionState.DISCONNECTING
 
@@ -78,6 +95,7 @@ class BluetoothGattController @Inject constructor(
 //            }
 //        }
 //    }
+
     override val isConnected: StateFlow<Boolean>
         get() = TODO("Not yet implemented")
 
@@ -129,6 +147,84 @@ class BluetoothGattController @Inject constructor(
         }
     }
 
+    override fun startBluetoothServer(deviceAddress: String): Flow<ConnectionResult> {
+        return flow {
+            Log.d("seno", "here")
+            if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
+                throw SecurityException("No BLUETOOTH_CONNECT permission")
+            }
+            currentClientSocket = bluetoothAdapter
+                ?.getRemoteDevice(deviceAddress)
+                ?.createRfcommSocketToServiceRecord(
+                    UUID.fromString(SERVICE_UUID)
+                )
+            currentServerSocket = bluetoothAdapter?.listenUsingRfcommWithServiceRecord(
+                "chat_service",
+                UUID.fromString(SERVICE_UUID)
+            )
+//            stopDiscovery()
+            currentClientSocket?.let { socket ->
+                try {
+                    socket.connect()
+                    Log.d("seenxx", "heree")
+                    emit(ConnectionResult.ConnectionEstablished)
+                    BluetoothDataTransferService(socket).also { data ->
+                        dataTransferService = data
+                        emitAll(
+                            data.listenForIncomingMessages()
+                                .map { ConnectionResult.TransferSucceeded(it) }
+                        )
+                    }
+                } catch (e: IOException) {
+                    socket.close()
+                    currentClientSocket = null
+                    emit(ConnectionResult.Error("Connection was interrupted"))
+                }
+            }
+        }.onCompletion {
+            closeConnection()
+        }.flowOn(Dispatchers.IO)
+    }
+
+    override fun listenBluetoothServer(): Flow<ConnectionResult> {
+        return flow {
+            if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
+                throw SecurityException("No BLUETOOTH_CONNECT permission")
+            }
+
+            currentServerSocket = bluetoothAdapter?.listenUsingRfcommWithServiceRecord(
+                "chat_service",
+                UUID.fromString(SERVICE_UUID)
+            )
+
+            var shouldLoop = true
+            while (shouldLoop) {
+                currentClientSocket = try {
+                    currentServerSocket?.accept()
+                } catch (e: IOException) {
+                    shouldLoop = false
+                    null
+                }
+                emit(ConnectionResult.ConnectionEstablished)
+                currentClientSocket?.let {
+                    currentServerSocket?.close()
+                    val service = BluetoothDataTransferService(it)
+                    dataTransferService = service
+
+                    emitAll(
+                        service
+                            .listenForIncomingMessages()
+                            .map { data ->
+                                ConnectionResult.TransferSucceeded(data)
+                            }
+                    )
+                }
+            }
+        }.onCompletion {
+            closeConnection()
+        }.flowOn(Dispatchers.IO)
+    }
+
 //    override fun startBluetoothServer(): Flow<ConnectionResult> {
 //        if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
 //            throw SecurityException("No BLUETOOTH_CONNECT permission")
@@ -153,10 +249,27 @@ class BluetoothGattController @Inject constructor(
         }
     }
 
-//    override suspend fun trySendMessage(message: String): MessageDataClass? {
-//    }
+    override suspend fun trySendMessage(message: String, deviceAddress: String): MessageDataClass? {
+        if(!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
+            return null
+        }
+        if(dataTransferService == null) {
+            return null
+        }
+        val bluetoothMessage = MessageDataClass(
+            message = message,
+            senderName = bluetoothAdapter?.name ?: "Unknown name",
+            isFromLocalUser = true
+        )
+        dataTransferService?.sendMessage(bluetoothMessage.toByteArray())
+        return bluetoothMessage
+    }
 
     override fun closeConnection() {
+        currentClientSocket?.close()
+        currentServerSocket?.close()
+        currentClientSocket = null
+        currentServerSocket = null
     }
 
     override fun release() {
@@ -164,6 +277,10 @@ class BluetoothGattController @Inject constructor(
 
     private fun hasPermission(permission: String): Boolean {
         return context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+    }
+
+    companion object {
+        const val SERVICE_UUID = "27b7d1da-08c7-4505-a6d1-2459987e5e2d"
     }
 
 }

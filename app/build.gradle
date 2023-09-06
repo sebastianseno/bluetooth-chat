@@ -71,7 +71,6 @@ dependencies {
 
     implementation "com.google.dagger:hilt-android:$hilt_version"
     kapt "com.google.dagger:hilt-compiler:$hilt_version"
-    androidTestImplementation "com.google.dagger:hilt-android-testing:$hilt_version"
     annotationProcessor "com.google.dagger:dagger-android-processor:2.11"
     implementation "androidx.hilt:hilt-navigation-compose:$hilt_compose_navigation_version"
 

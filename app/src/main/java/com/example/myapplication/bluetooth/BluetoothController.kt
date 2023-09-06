@@ -17,10 +17,11 @@ interface BluetoothController {
     fun startDiscovery()
     fun stopDiscovery()
 
-//    fun startBluetoothServer(): Flow<ConnectionResult>
+    fun startBluetoothServer(deviceAddress: String): Flow<ConnectionResult>
+    fun listenBluetoothServer(): Flow<ConnectionResult>
     fun connectToDevice(device: BluetoothDeviceDataClass)
 
-//    suspend fun trySendMessage(message: String): MessageDataClass?
+    suspend fun trySendMessage(message: String, deviceAddress: String): MessageDataClass?
 
     fun closeConnection()
     fun release()

@@ -2,6 +2,7 @@ package com.example.myapplication.dependency
 
 import android.app.Application
 import android.content.Context
+import com.example.myapplication.bluetooth.BluetoothDataTransferService
 import com.example.myapplication.bluetooth.BluetoothGattController
 import dagger.Module
 import dagger.Provides

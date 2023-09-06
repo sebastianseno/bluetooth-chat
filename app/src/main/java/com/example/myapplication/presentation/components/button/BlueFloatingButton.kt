@@ -1,4 +1,4 @@
-package com.example.myapplication.presentation.components
+package com.example.myapplication.presentation.components.button
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,21 +15,21 @@ import com.example.myapplication.presentation.theme.Blue
 import com.example.myapplication.presentation.theme.SoftGray
 
 @Composable
-fun FloatingButton(
+fun BlueFloatingButton(
     modifier: Modifier = Modifier,
+    label : String = "Scan Now",
     onClick: () -> Unit
 ) {
     Button(
         shape = RoundedCornerShape(30.dp),
-        colors = ButtonDefaults.buttonColors(Color.White),
+        colors = ButtonDefaults.buttonColors(Blue),
         onClick = { onClick() },
         border = BorderStroke(1.dp, SoftGray),
-        modifier = modifier
-            .fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     ) {
         Text(
-            text = "Scan Now",
-            color = Blue,
+            text = label,
+            color = Color.White,
             modifier = Modifier.padding(vertical = 10.dp)
         )
     }

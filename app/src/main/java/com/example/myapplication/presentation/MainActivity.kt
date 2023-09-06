@@ -13,16 +13,14 @@ import androidx.compose.material.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.navigation.Route
 import com.example.myapplication.navigation.addNavigationGraph
-import com.example.myapplication.presentation.screen.devicescan.BluetoothViewModel
+import com.example.myapplication.presentation.screen.viewmodel.BluetoothViewModel
 import com.example.myapplication.presentation.theme.MyApplicationTheme
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.lifecycle.HiltViewModel
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {

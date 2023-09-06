@@ -1,17 +1,18 @@
-package com.plcoding.bluetoothchat.data.chat
+package com.example.myapplication.mapper
 
-import com.plcoding.bluetoothchat.domain.chat.BluetoothMessage
+import com.example.myapplication.domain.MessageDataClass
 
-fun String.toBluetoothMessage(isFromLocalUser: Boolean): BluetoothMessage {
+
+fun String.toBluetoothMessage(isFromLocalUser: Boolean): MessageDataClass {
     val name = substringBeforeLast("#")
     val message = substringAfter("#")
-    return BluetoothMessage(
+    return MessageDataClass(
         message = message,
         senderName = name,
         isFromLocalUser = isFromLocalUser
     )
 }
 
-fun BluetoothMessage.toByteArray(): ByteArray {
+fun MessageDataClass.toByteArray(): ByteArray {
     return "$senderName#$message".encodeToByteArray()
 }
