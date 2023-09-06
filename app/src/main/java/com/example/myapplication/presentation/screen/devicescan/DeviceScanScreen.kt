@@ -5,13 +5,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.myapplication.domain.ConnectionState
@@ -19,6 +23,7 @@ import com.example.myapplication.presentation.components.Device
 import com.example.myapplication.presentation.components.button.BlueFloatingButton
 import com.example.myapplication.presentation.components.button.FloatingButton
 import com.example.myapplication.presentation.screen.viewmodel.BluetoothViewModel
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 @Composable
 fun DeviceScanScreen(
@@ -27,14 +32,12 @@ fun DeviceScanScreen(
 ) {
 
     val state = viewModel.state.collectAsState()
+    var deviceAddress by rememberSaveable { mutableStateOf("") }
+    val systemUiController = rememberSystemUiController()
 
-    val deviceAddress = remember {
-        mutableStateOf("")
-    }
-
-    LaunchedEffect(state.value.connectionStatus) {
-        if (state.value.connectionStatus == ConnectionState.CONNECTED && deviceAddress.value.isNotEmpty()) {
-            onNavigate(deviceAddress.value)
+    LaunchedEffect(state.value.connectionStatus, deviceAddress) {
+        if (state.value.connectionStatus == ConnectionState.CONNECTED) {
+            onNavigate(deviceAddress)
         }
     }
     Box(
@@ -42,6 +45,9 @@ fun DeviceScanScreen(
             .padding(18.dp)
             .fillMaxSize()
     ) {
+        systemUiController.setStatusBarColor(
+            color = MaterialTheme.colors.primary
+        )
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -50,16 +56,18 @@ fun DeviceScanScreen(
                 Device(
                     deviceName = it.name ?: it.address ?: "Tidak dikenal",
                 ) {
-                    deviceAddress.value = it.address ?: ""
+                    deviceAddress = it.address ?: "empty"
                     viewModel.connectToDevice(it)
                 }
             }
         }
         Column( modifier = Modifier.align(Alignment.BottomCenter), verticalArrangement = Arrangement.spacedBy(15.dp)) {
-            BlueFloatingButton(
-                label = "Start Chat"
-            ) {
-                onNavigate("null")
+            if (state.value.pairedDevices.isNotEmpty()) {
+                BlueFloatingButton(
+                    label = "Start Chat"
+                ) {
+                    onNavigate("null")
+                }
             }
             FloatingButton(
             ) {

@@ -7,7 +7,5 @@ enum class ConnectionState {
     DISCONNECTED,
     CONNECT;
 
-    fun isActive() = (this == CONNECTING || this == CONNECTED)
-
     fun toTitle() = this.name.lowercase().replaceFirstChar { it.uppercase() }
 }

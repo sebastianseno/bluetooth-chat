@@ -31,6 +31,7 @@ import com.example.myapplication.domain.MessageDataClass
 import com.example.myapplication.presentation.components.ChatBubble
 import com.example.myapplication.presentation.screen.viewmodel.BluetoothViewModel
 import com.example.myapplication.presentation.theme.Blue
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 @Composable
 fun ChatScreen(
@@ -40,6 +41,7 @@ fun ChatScreen(
     val message = rememberSaveable {
         mutableStateOf("")
     }
+    val systemUiController = rememberSystemUiController()
     val state = viewModel.state.collectAsState()
     LaunchedEffect(key1 = Unit, block = {
         if (deviceAddress != "null") {
@@ -53,7 +55,13 @@ fun ChatScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-
+        systemUiController.setStatusBarColor(
+            color = if (state.value.isConnected) {
+                Color.Green
+            } else {
+                Color.Red
+            }
+        )
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -61,7 +69,10 @@ fun ChatScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             state.value.chatMessages.forEach {
-                ChatBubble(message = it ?: MessageDataClass())
+                ChatBubble(
+                    message = it ?: MessageDataClass(),
+                    modifier = Modifier.align(if (it?.isFromLocalUser == true) Alignment.End else Alignment.Start)
+                )
             }
         }
         Row(
@@ -89,9 +100,6 @@ fun ChatScreen(
                     contentDescription = "Send message"
                 )
             }
-        }
-        if (state.value.isConnected) {
-            Text(text = "Online")
         }
     }
 }

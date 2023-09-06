@@ -5,6 +5,7 @@ buildscript {
         kotlin_version = '1.7.0'
         hilt_compose_navigation_version = '1.0.0'
         kotlin_version = '1.9.0'
+        accompanist_version = '0.28.0'
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-serialization:$kotlin_version"

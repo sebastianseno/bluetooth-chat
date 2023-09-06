@@ -14,10 +14,9 @@ fun NavGraphBuilder.addNavigationGraph(
     navController: NavHostController,
     viewModel: BluetoothViewModel
 ) {
-
     composable(Route.DeviceScanScreen.route) {
         DeviceScanScreen(viewModel = viewModel) { deviceAddress ->
-                navController.navigateTo(Route.ChatScreen.passData(deviceAddress), it)
+            navController.navigateTo(Route.ChatScreen.passData(deviceAddress), it)
         }
     }
     composable(

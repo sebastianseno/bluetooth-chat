@@ -1,6 +1,5 @@
 package com.example.myapplication.presentation.screen.viewmodel
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.bluetooth.BluetoothGattController
@@ -23,7 +22,6 @@ import javax.inject.Inject
 @HiltViewModel
 class BluetoothViewModel @Inject constructor(
     private val bluetoothController: BluetoothGattController,
-    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(BluetoothUiState())
@@ -32,13 +30,15 @@ class BluetoothViewModel @Inject constructor(
 
     val state = combine(
         bluetoothController.scannedDevices,
+        bluetoothController.pairedDevices,
         _state,
         _bleMessage,
-    ) { scannedDevices, state, message ->
+    ) { scannedDevices, pairedDevice, state, message ->
         state.copy(
             scannedDevices = scannedDevices,
             connectionStatus = message,
-            chatMessages = state.chatMessages
+            chatMessages = state.chatMessages,
+            pairedDevices = pairedDevice
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), _state.value)
 
@@ -51,7 +51,6 @@ class BluetoothViewModel @Inject constructor(
     }
 
     fun waitForIncomingConnections(deviceAddress: String?) {
-//        _state.update { it.copy(isConnecting = true) }
         viewModelScope.launch {
             if (deviceAddress != null) {
                 deviceConnectionJob = bluetoothController

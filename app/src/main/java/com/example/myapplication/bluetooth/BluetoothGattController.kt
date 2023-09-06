@@ -14,6 +14,7 @@ import android.content.Context
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.util.Log
+import com.example.myapplication.domain.BluetoothController
 import com.example.myapplication.domain.BluetoothDeviceDataClass
 import com.example.myapplication.domain.ConnectionResult
 import com.example.myapplication.domain.ConnectionState
@@ -23,7 +24,6 @@ import com.example.myapplication.mapper.toByteArray
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emitAll
@@ -35,7 +35,7 @@ import kotlinx.coroutines.flow.update
 import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
-import kotlin.time.Duration.Companion.seconds
+
 
 @SuppressLint("MissingPermission")
 class BluetoothGattController @Inject constructor(
@@ -59,7 +59,6 @@ class BluetoothGattController @Inject constructor(
 
     private val bluetoothGattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
-            Log.d("senoo", newState.toString())
             when (newState) {
                 BluetoothProfile.STATE_CONNECTING -> connectMessage.value =
                     ConnectionState.CONNECTING
@@ -67,7 +66,6 @@ class BluetoothGattController @Inject constructor(
                 BluetoothProfile.STATE_CONNECTED -> {
                     connectMessage.value = ConnectionState.CONNECTED
                 }
-
                 BluetoothProfile.STATE_DISCONNECTING -> connectMessage.value =
                     ConnectionState.DISCONNECTING
 
@@ -84,67 +82,40 @@ class BluetoothGattController @Inject constructor(
             if (newDevice in devices) devices else devices + newDevice
         }
     }
-
-//    private val scanCallbacks = object : ScanCallback() {
-//        override fun onScanResult(callbackType: Int, result: ScanResult?) {
-//            if (result != null) {
-//                _scannedDevices.update { devices ->
-//                    val newDevice = result.device!!.toBluetoothDeviceDomain()
-//                    if (newDevice in devices) devices else devices + newDevice
-//                }
-//            }
-//        }
-//    }
-
-    override val isConnected: StateFlow<Boolean>
-        get() = TODO("Not yet implemented")
+    private val onActionPairingReceiver = ActionPairingRequestReceiver()
 
     private val _scannedDevices = MutableStateFlow<List<BluetoothDeviceDataClass>>(emptyList())
     override val scannedDevices: StateFlow<List<BluetoothDeviceDataClass>>
         get() = _scannedDevices.asStateFlow()
 
-    override val pairedDevices: StateFlow<List<BluetoothDeviceDataClass>>
-        get() = TODO("Not yet implemented")
 
     private val _selectedAddress = MutableStateFlow("")
     override val selectedAddress: StateFlow<String>
         get() = _selectedAddress.asStateFlow()
-    override val errors: SharedFlow<String>
-        get() = TODO("Not yet implemented")
 
-    //    override fun startDiscovery() {
-//        if (hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
-//
-//            context.registerReceiver(
-//                foundDeviceReceiver,
-//                IntentFilter(BluetoothDevice.ACTION_FOUND)
-//            )
-//
-////            updatePairedDevices()
-//
-//            bluetoothAdapter?.startDiscovery()
-//        }
-//    }
+    private val _pairedDevices = MutableStateFlow<List<BluetoothDeviceDataClass>>(emptyList())
+    override val pairedDevices: StateFlow<List<BluetoothDeviceDataClass>>
+        get() = _pairedDevices.asStateFlow()
+
+    init {
+        updatePairedDevices()
+    }
     override fun startDiscovery() {
         if (hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
-//            bluetoothAdapter?.bluetoothLeScanner?.startScan(scanCallbacks)
             context.registerReceiver(
                 foundDeviceReceiver,
                 IntentFilter(BluetoothDevice.ACTION_FOUND)
             )
+            updatePairedDevices()
             bluetoothAdapter?.startDiscovery()
         }
     }
 
     override fun stopDiscovery() {
-        try {
-//            if (bluetoothAdapter?.isEnabled == true)
-//                bluetoothAdapter?.bluetoothLeScanner?.stopScan(scanCallbacks)
-        } catch (e: Exception) {
-
-        } finally {
-
+        if(!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
+            return
         }
+        bluetoothAdapter?.cancelDiscovery()
     }
 
     override fun startBluetoothServer(deviceAddress: String): Flow<ConnectionResult> {
@@ -158,11 +129,12 @@ class BluetoothGattController @Inject constructor(
                 ?.createRfcommSocketToServiceRecord(
                     UUID.fromString(SERVICE_UUID)
                 )
+
             currentServerSocket = bluetoothAdapter?.listenUsingRfcommWithServiceRecord(
                 "chat_service",
                 UUID.fromString(SERVICE_UUID)
             )
-//            stopDiscovery()
+            stopDiscovery()
             currentClientSocket?.let { socket ->
                 try {
                     socket.connect()
@@ -225,22 +197,20 @@ class BluetoothGattController @Inject constructor(
         }.flowOn(Dispatchers.IO)
     }
 
-//    override fun startBluetoothServer(): Flow<ConnectionResult> {
-//        if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
-//            throw SecurityException("No BLUETOOTH_CONNECT permission")
-//        }
-//
-//    }
-
     @SuppressLint("MissingPermission")
     override fun connectToDevice(device: BluetoothDeviceDataClass) {
         if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
             return
         }
+
         if (bluetoothAdapter?.isEnabled == true) {
             bluetoothAdapter?.let { adapter ->
                 try {
                     val gattDevice = adapter.getRemoteDevice(device.address)
+                    context.registerReceiver(
+                        onActionPairingReceiver,
+                        IntentFilter(BluetoothDevice.ACTION_PAIRING_REQUEST)
+                    )
                     gattDevice.connectGatt(application, false, bluetoothGattCallback)
                 } catch (e: Exception) {
                     _isConnected.value = false
@@ -250,10 +220,10 @@ class BluetoothGattController @Inject constructor(
     }
 
     override suspend fun trySendMessage(message: String, deviceAddress: String): MessageDataClass? {
-        if(!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
+        if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
             return null
         }
-        if(dataTransferService == null) {
+        if (dataTransferService == null) {
             return null
         }
         val bluetoothMessage = MessageDataClass(
@@ -282,5 +252,15 @@ class BluetoothGattController @Inject constructor(
     companion object {
         const val SERVICE_UUID = "27b7d1da-08c7-4505-a6d1-2459987e5e2d"
     }
-
+    private fun updatePairedDevices() {
+        if(!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
+            return
+        }
+        bluetoothAdapter
+            ?.bondedDevices
+            ?.map { it.toBluetoothDeviceDomain() }
+            ?.also { devices ->
+                _pairedDevices.update { devices }
+            }
+    }
 }
