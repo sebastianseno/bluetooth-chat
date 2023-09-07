@@ -37,7 +37,6 @@ fun DeviceScanScreen(
         }
     }
 
-
     Box(
         Modifier
             .padding(18.dp)
