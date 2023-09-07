@@ -1,4 +1,6 @@
 # Bluetooth Legacy Chat Apps
+Chat with bluetooth connection
+
 
 ## Library
 
