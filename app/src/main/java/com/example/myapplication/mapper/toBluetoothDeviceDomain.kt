@@ -8,6 +8,7 @@ import com.example.myapplication.domain.BluetoothDeviceDataClass
 fun BluetoothDevice.toBluetoothDeviceDomain(): BluetoothDeviceDataClass {
     return BluetoothDeviceDataClass(
         name = name,
-        address = address
+        address = address,
+
     )
 }

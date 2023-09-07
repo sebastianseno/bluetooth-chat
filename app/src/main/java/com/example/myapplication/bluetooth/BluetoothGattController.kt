@@ -3,16 +3,12 @@ package com.example.myapplication.bluetooth
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Application
-import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothGatt
-import android.bluetooth.BluetoothGattCallback
-import android.bluetooth.BluetoothManager
-import android.bluetooth.BluetoothProfile
-import android.bluetooth.BluetoothServerSocket
-import android.bluetooth.BluetoothSocket
+import android.bluetooth.*
+import android.bluetooth.le.*
+import android.content.ContentValues.TAG
 import android.content.Context
-import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.os.ParcelUuid
 import android.util.Log
 import com.example.myapplication.domain.BluetoothController
 import com.example.myapplication.domain.BluetoothDeviceDataClass
@@ -20,18 +16,17 @@ import com.example.myapplication.domain.ConnectionResult
 import com.example.myapplication.domain.ConnectionState
 import com.example.myapplication.domain.MessageDataClass
 import com.example.myapplication.mapper.toBluetoothDeviceDomain
-import com.example.myapplication.mapper.toByteArray
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
@@ -41,11 +36,11 @@ import javax.inject.Inject
 class BluetoothGattController @Inject constructor(
     private val context: Context,
     private val application: Application,
+    private val scope: CoroutineScope
 ) : BluetoothController {
 
     private val _isConnected = MutableStateFlow(false)
 
-    private var dataTransferService: BluetoothDataTransferService? = null
     private var currentServerSocket: BluetoothServerSocket? = null
     private var currentClientSocket: BluetoothSocket? = null
     private val bluetoothManager by lazy {
@@ -55,18 +50,68 @@ class BluetoothGattController @Inject constructor(
         bluetoothManager?.adapter
     }
 
+    private var advertiser: BluetoothLeAdvertiser? = null
+    private var advertiseSettings: AdvertiseSettings = buildAdvertiseSettings()
+    private var advertiseData: AdvertiseData = buildAdvertiseData()
+
+
     val connectMessage = MutableStateFlow(ConnectionState.DISCONNECTED)
 
+    private val scanCallback = object : ScanCallback() {
+        override fun onScanFailed(errorCode: Int) {
+            super.onScanFailed(errorCode)
+//            if (errorCode == 1) {
+//                stopDiscovery()
+//            }
+        }
+
+        override fun onScanResult(callbackType: Int, result: ScanResult) {
+            super.onScanResult(callbackType, result)
+            _scannedDevices.update { devices ->
+                Log.i("senox", result.device.toString())
+                val newDevice = result.device.toBluetoothDeviceDomain()
+                if (newDevice in devices) devices else devices + newDevice
+            }
+        }
+
+        override fun onBatchScanResults(results: List<ScanResult>) {
+            super.onBatchScanResults(results)
+            results.map { result ->
+                _scannedDevices.update { devices ->
+                    val newDevice = result.device.toBluetoothDeviceDomain()
+                    if (newDevice in devices) devices else devices + newDevice
+                }
+            }
+            Log.i("seno", results.toString())
+        }
+    }
+
+    private var gattClient: BluetoothGatt? = null
+    private var messageCharacteristic: BluetoothGattCharacteristic? = null
+    private var bluetoothGattServer: BluetoothGattServer? = null
+    private val deviceAdvertiseCallback = object : AdvertiseCallback() {
+        override fun onStartFailure(errorCode: Int) {
+            super.onStartFailure(errorCode)
+            val errorMessage = "Advertise failed with error: $errorCode"
+            Log.d(TAG, "failed $errorMessage")
+        }
+
+        override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
+            super.onStartSuccess(settingsInEffect)
+            Log.d(TAG, "successfully started")
+        }
+    }
     private val bluetoothGattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
+            val isSuccess = status == BluetoothGatt.GATT_SUCCESS
             when (newState) {
                 BluetoothProfile.STATE_CONNECTING -> connectMessage.value =
                     ConnectionState.CONNECTING
 
                 BluetoothProfile.STATE_CONNECTED -> {
                     connectMessage.value = ConnectionState.CONNECTED
+                    if (isSuccess) gatt?.discoverServices()
                 }
-
                 BluetoothProfile.STATE_DISCONNECTING -> connectMessage.value =
                     ConnectionState.DISCONNECTING
 
@@ -76,14 +121,16 @@ class BluetoothGattController @Inject constructor(
                 else -> connectMessage.value = ConnectionState.CONNECT
             }
         }
-    }
-    private val foundDeviceReceiver = FoundDeviceReceiver { device ->
-        _scannedDevices.update { devices ->
-            val newDevice = device.toBluetoothDeviceDomain()
-            if (newDevice in devices) devices else devices + newDevice
+
+        override fun onServicesDiscovered(discoveredGatt: BluetoothGatt?, status: Int) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                this@BluetoothGattController.gattClient = discoveredGatt
+                val service = discoveredGatt?.getService(SERVICE_UUID)
+                if (service != null)
+                    messageCharacteristic = service.getCharacteristic(MESSAGE_UUID)
+            }
         }
     }
-    private val onActionPairingReceiver = ActionPairingRequestReceiver()
 
     private val _scannedDevices = MutableStateFlow<List<BluetoothDeviceDataClass>>(emptyList())
     override val scannedDevices: StateFlow<List<BluetoothDeviceDataClass>>
@@ -98,102 +145,114 @@ class BluetoothGattController @Inject constructor(
     override val pairedDevices: StateFlow<List<BluetoothDeviceDataClass>>
         get() = _pairedDevices.asStateFlow()
 
-    init {
-        updatePairedDevices()
-    }
+    private val _messageData = MutableStateFlow<ConnectionResult?>(null)
+    override val messageData: StateFlow<ConnectionResult?>
+        get() = _messageData
 
-    override fun startDiscovery() {
+
+    override fun startScan() {
         if (hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
-            context.registerReceiver(
-                foundDeviceReceiver,
-                IntentFilter(BluetoothDevice.ACTION_FOUND)
-            )
-            updatePairedDevices()
-            bluetoothAdapter?.startDiscovery()
+            val btScanner = bluetoothAdapter?.bluetoothLeScanner
+            btScanner?.startScan(null, buildScanSettings(), scanCallback)
         }
     }
+
+    private fun buildScanFilters(): List<ScanFilter> {
+        val builder = ScanFilter.Builder()
+        builder.setServiceUuid(ParcelUuid(SERVICE_UUID))
+        val filter = builder.build()
+        return listOf(filter)
+    }
+
+    private fun buildScanSettings(): ScanSettings {
+        return ScanSettings.Builder()
+            .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
+            .build()
+    }
+
+    private fun setupGattService(): BluetoothGattService {
+        val service = BluetoothGattService(SERVICE_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY)
+        val messageCharacteristic = BluetoothGattCharacteristic(
+            MESSAGE_UUID,
+            BluetoothGattCharacteristic.PROPERTY_WRITE,
+            BluetoothGattCharacteristic.PERMISSION_WRITE
+        )
+        service.addCharacteristic(messageCharacteristic)
+
+        return service
+    }
+
 
     override fun stopDiscovery() {
         if (!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
             return
         }
-        bluetoothAdapter?.cancelDiscovery()
+//        if (bluetoothAdapter?.isEnabled == true) {
+//            val btScanner = bluetoothAdapter?.bluetoothLeScanner
+//            btScanner?.stopScan(scanCallback)
+//        }
+
     }
 
-    override fun startBluetoothServer(deviceAddress: String): Flow<ConnectionResult> {
+    override fun startGattServer(): Flow<ConnectionResult> {
         return flow {
-            Log.d("seno", "here")
             if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
                 throw SecurityException("No BLUETOOTH_CONNECT permission")
             }
-            currentClientSocket = bluetoothAdapter
-                ?.getRemoteDevice(deviceAddress)
-                ?.createRfcommSocketToServiceRecord(
-                    UUID.fromString(SERVICE_UUID)
-                )
+            val gattServerCallback = object : BluetoothGattServerCallback() {
+                override fun onConnectionStateChange(
+                    device: BluetoothDevice?,
+                    status: Int,
+                    newState: Int
+                ) {
+                    val isSuccess = status == BluetoothGatt.GATT_SUCCESS
+                    val isConnected = newState == BluetoothProfile.STATE_CONNECTED
+                    _isConnected.value = isSuccess && isConnected
+                }
 
-            currentServerSocket = bluetoothAdapter?.listenUsingRfcommWithServiceRecord(
-                "chat_service",
-                UUID.fromString(SERVICE_UUID)
-            )
-            stopDiscovery()
-            currentClientSocket?.let { socket ->
-                try {
-                    socket.connect()
-                    Log.d("seenxx", "heree")
-                    emit(ConnectionResult.ConnectionEstablished)
-                    BluetoothDataTransferService(socket).also { data ->
-                        dataTransferService = data
-                        emitAll(
-                            data.listenForIncomingMessages()
-                                .map { ConnectionResult.TransferSucceeded(it) }
+                override fun onCharacteristicWriteRequest(
+                    device: BluetoothDevice?,
+                    requestId: Int,
+                    characteristic: BluetoothGattCharacteristic?,
+                    preparedWrite: Boolean,
+                    responseNeeded: Boolean,
+                    offset: Int,
+                    value: ByteArray?
+                ) {
+                    try {
+                        bluetoothGattServer?.sendResponse(
+                            device,
+                            requestId,
+                            BluetoothGatt.GATT_SUCCESS,
+                            0,
+                            null
                         )
+                        val message = value?.toString(Charsets.UTF_8)
+                        scope.launch {
+                            emit(
+                                ConnectionResult.TransferSucceeded(
+                                    MessageDataClass(
+                                        message = message.orEmpty(),
+                                        senderName = device?.name ?: device?.address ?: "Unknown",
+                                        isFromLocalUser = true
+                                    )
+                                )
+                            )
+                        }
+                    } catch (e: IOException) {
+                        scope.launch {
+                            emit(ConnectionResult.Error("Connection was interrupted"))
+                        }
                     }
-                } catch (e: IOException) {
-                    socket.close()
-                    currentClientSocket = null
-                    emit(ConnectionResult.Error("Connection was interrupted"))
                 }
             }
-        }.onCompletion {
-            closeConnection()
-        }.flowOn(Dispatchers.IO)
-    }
-
-    override fun listenBluetoothServer(): Flow<ConnectionResult> {
-        return flow {
-            if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
-                throw SecurityException("No BLUETOOTH_CONNECT permission")
-            }
-
-            currentServerSocket = bluetoothAdapter?.listenUsingRfcommWithServiceRecord(
-                "chat_service",
-                UUID.fromString(SERVICE_UUID)
-            )
-
-            var shouldLoop = true
-            while (shouldLoop) {
-                currentClientSocket = try {
-                    currentServerSocket?.accept()
-                } catch (e: IOException) {
-                    shouldLoop = false
-                    null
+            bluetoothGattServer =
+                bluetoothManager.openGattServer(
+                    context, gattServerCallback
+                ).apply {
+                    addService(setupGattService())
                 }
-                emit(ConnectionResult.ConnectionEstablished)
-                currentClientSocket?.let {
-                    currentServerSocket?.close()
-                    val service = BluetoothDataTransferService(it)
-                    dataTransferService = service
-
-                    emitAll(
-                        service
-                            .listenForIncomingMessages()
-                            .map { data ->
-                                ConnectionResult.TransferSucceeded(data)
-                            }
-                    )
-                }
-            }
+            startAdvertisement()
         }.onCompletion {
             closeConnection()
         }.flowOn(Dispatchers.IO)
@@ -209,10 +268,6 @@ class BluetoothGattController @Inject constructor(
             bluetoothAdapter?.let { adapter ->
                 try {
                     val gattDevice = adapter.getRemoteDevice(device.address)
-                    context.registerReceiver(
-                        onActionPairingReceiver,
-                        IntentFilter(BluetoothDevice.ACTION_PAIRING_REQUEST)
-                    )
                     gattDevice.connectGatt(application, false, bluetoothGattCallback)
                 } catch (e: Exception) {
                     _isConnected.value = false
@@ -221,20 +276,28 @@ class BluetoothGattController @Inject constructor(
         }
     }
 
-    override suspend fun trySendMessage(message: String, deviceAddress: String): MessageDataClass? {
+    override suspend fun trySendMessage(message: String, deviceAddress: String) {
         if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
-            return null
+            val bluetoothMessage = MessageDataClass(
+                message = message,
+                senderName = bluetoothAdapter?.name ?: "Unknown name",
+                isFromLocalUser = true
+            )
+            messageCharacteristic?.let { characteristic ->
+                characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+
+                val messageBytes = message.toByteArray(Charsets.UTF_8)
+                characteristic.value = messageBytes
+                this.gattClient?.let {
+                    val success = it.writeCharacteristic(messageCharacteristic)
+                    if (!success) {
+                        _messageData.value = ConnectionResult.TransferSucceeded(
+                            bluetoothMessage
+                        )
+                    }
+                }
+            }
         }
-        if (dataTransferService == null) {
-            return null
-        }
-        val bluetoothMessage = MessageDataClass(
-            message = message,
-            senderName = bluetoothAdapter?.name ?: "Unknown name",
-            isFromLocalUser = true
-        )
-        dataTransferService?.sendMessage(bluetoothMessage.toByteArray())
-        return bluetoothMessage
     }
 
     override fun closeConnection() {
@@ -251,19 +314,29 @@ class BluetoothGattController @Inject constructor(
         return context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
     }
 
-    companion object {
-        const val SERVICE_UUID = "27b7d1da-08c7-4505-a6d1-2459987e5e2d"
+    private fun startAdvertisement() {
+        advertiser = bluetoothAdapter?.bluetoothLeAdvertiser
+        advertiser?.startAdvertising(advertiseSettings, advertiseData, deviceAdvertiseCallback)
     }
 
-    private fun updatePairedDevices() {
-        if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
-            return
-        }
-        bluetoothAdapter
-            ?.bondedDevices
-            ?.map { it.toBluetoothDeviceDomain() }
-            ?.also { devices ->
-                _pairedDevices.update { devices }
-            }
+    private fun buildAdvertiseData(): AdvertiseData {
+        val dataBuilder = AdvertiseData.Builder()
+            .addServiceUuid(ParcelUuid(SERVICE_UUID))
+            .setIncludeDeviceName(true)
+
+        return dataBuilder.build()
     }
+
+    private fun buildAdvertiseSettings(): AdvertiseSettings {
+        return AdvertiseSettings.Builder()
+            .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_POWER)
+            .setTimeout(0)
+            .build()
+    }
+
+    companion object {
+        val SERVICE_UUID: UUID = UUID.fromString("0000b81d-0000-1000-8000-00805f9b34fb")
+        val MESSAGE_UUID: UUID = UUID.fromString("7db3e235-3608-41f3-a03c-955fcbd2ea4b")
+    }
+
 }

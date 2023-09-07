@@ -1,6 +1,9 @@
 package com.example.myapplication.presentation.screen.devicescan
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -8,7 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import com.example.myapplication.domain.ConnectionState
@@ -45,12 +47,17 @@ fun DeviceScanScreen(
             color = MaterialTheme.colors.primary
         )
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             state.value.scannedDevices.forEach {
+                val name =  it.name ?: it.address ?: "Tidak dikenal"
                 Device(
-                    deviceName = it.name ?: it.address ?: "Tidak dikenal",
+                    deviceName = name,
+                    isLoading = it.address == deviceAddress &&
+                            state.value.connectionStatus == ConnectionState.CONNECTING
                 ) {
                     deviceAddress = it.address ?: "empty"
                     viewModel.connectToDevice(it)

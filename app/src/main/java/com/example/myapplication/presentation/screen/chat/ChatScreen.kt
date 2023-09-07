@@ -33,11 +33,7 @@ fun ChatScreen(
     val systemUiController = rememberSystemUiController()
     val state = viewModel.state.collectAsState()
     LaunchedEffect(key1 = Unit, block = {
-        if (deviceAddress != "null") {
-            viewModel.waitForIncomingConnections(deviceAddress)
-        } else {
-            viewModel.listenBluetoothServer()
-        }
+        viewModel.waitForIncomingConnections()
     })
     Box(
         Modifier

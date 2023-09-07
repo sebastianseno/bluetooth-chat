@@ -28,6 +28,10 @@ class BluetoothViewModel @Inject constructor(
     private val _bleMessage = bluetoothController.connectMessage
     private var deviceConnectionJob: Job? = null
 
+    init {
+        waitForIncomingConnections()
+    }
+
     val state = combine(
         bluetoothController.scannedDevices,
         bluetoothController.pairedDevices,
@@ -43,39 +47,24 @@ class BluetoothViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), _state.value)
 
     fun startScan() {
-        bluetoothController.startDiscovery()
+        bluetoothController.startScan()
     }
 
     fun connectToDevice(device: BluetoothDeviceDataClass) {
         bluetoothController.connectToDevice(device)
     }
 
-    fun waitForIncomingConnections(deviceAddress: String?) {
+    fun waitForIncomingConnections() {
         viewModelScope.launch {
-            if (deviceAddress != null) {
-                deviceConnectionJob = bluetoothController
-                    .startBluetoothServer(deviceAddress)
-                    .listen()
-            }
+            deviceConnectionJob = bluetoothController
+                .startGattServer()
+                .listen()
         }
-    }
-
-    fun listenBluetoothServer() {
-        deviceConnectionJob = bluetoothController
-            .listenBluetoothServer()
-            .listen()
     }
 
     fun sendMessage(message: String, deviceAddress: String) {
         viewModelScope.launch {
-            val bluetoothMessage = bluetoothController.trySendMessage(message, deviceAddress)
-            if (bluetoothMessage != null) {
-                _state.update {
-                    it.copy(
-                        chatMessages = (it.chatMessages + bluetoothMessage)
-                    )
-                }
-            }
+            bluetoothController.trySendMessage(message, deviceAddress)
         }
     }
 

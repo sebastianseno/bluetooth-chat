@@ -7,13 +7,13 @@ interface BluetoothController {
     val scannedDevices: StateFlow<List<BluetoothDeviceDataClass>>
     val selectedAddress: StateFlow<String>
     val pairedDevices: StateFlow<List<BluetoothDeviceDataClass>>
+    val messageData: StateFlow<ConnectionResult?>
 
-    fun startDiscovery()
+    fun startScan()
     fun stopDiscovery()
-    fun startBluetoothServer(deviceAddress: String): Flow<ConnectionResult>
-    fun listenBluetoothServer(): Flow<ConnectionResult>
+    fun startGattServer(): Flow<ConnectionResult>
     fun connectToDevice(device: BluetoothDeviceDataClass)
-    suspend fun trySendMessage(message: String, deviceAddress: String): MessageDataClass?
+    suspend fun trySendMessage(message: String, deviceAddress: String)
     fun closeConnection()
     fun release()
 }

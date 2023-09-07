@@ -1,12 +1,9 @@
 package com.example.myapplication.presentation.components
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -21,6 +18,7 @@ import com.example.myapplication.presentation.theme.SoftGray
 @Composable
 fun Device(
     deviceName: String,
+    isLoading: Boolean,
     onClick: () -> Unit
 ) {
     Row {
@@ -38,25 +36,30 @@ fun Device(
             )
         }
         Spacer(modifier = Modifier.width(8.dp))
-        Surface(
-            modifier = Modifier
-                .weight(1f)
-                .clickable {
-                    onClick()
-                },
-            color = Blue,
-            shape = RoundedCornerShape(10.dp),
-            elevation = 0.dp
-        ) {
-            Text(
-                text = "Connect Now",
-                color = Color.White,
-                fontSize = 13.sp,
-                textAlign = TextAlign.Center,
+        if (isLoading) {
+            CircularProgressIndicator()
+        } else {
+            Surface(
                 modifier = Modifier
-                    .padding(vertical = 10.dp)
-                    .fillMaxWidth()
-            )
+                    .weight(1f)
+                    .clickable {
+                        onClick()
+                    },
+                color = Blue,
+                shape = RoundedCornerShape(10.dp),
+                elevation = 0.dp
+            ) {
+                Text(
+                    text = "Connect Now",
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .padding(vertical = 10.dp)
+                        .fillMaxWidth()
+                )
+            }
         }
+
     }
 }
