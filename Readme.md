@@ -1,4 +1,4 @@
-# Bluetooth Chat Apps
+# Bluetooth Legacy Chat Apps
 
 ## Library
 
@@ -7,15 +7,9 @@
 - Material
 - Accompanist
 
-## How to install
-
-- unzip the file
-- open Android studio
-- import zipped file to Android studio
-- run the project from android studio
-- highly recommended using Android S or higher
-
 ## How to Use Apps
+
+
 - Open Application.
 - Click scan now button to scan nearby devices.
 - Click connect now button to pair with another device.
