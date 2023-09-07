@@ -1,6 +1,5 @@
 package com.example.myapplication.presentation.screen.devicescan
 
-import android.bluetooth.BluetoothDevice
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -17,7 +16,6 @@ import com.example.myapplication.domain.ConnectionState
 import com.example.myapplication.extension.navigateTo
 import com.example.myapplication.navigation.Route
 import com.example.myapplication.presentation.components.Device
-import com.example.myapplication.presentation.components.button.BlueFloatingButton
 import com.example.myapplication.presentation.components.button.FloatingButton
 import com.example.myapplication.presentation.screen.viewmodel.BluetoothViewModel
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
@@ -25,9 +23,8 @@ import com.google.accompanist.systemuicontroller.rememberSystemUiController
 @Composable
 fun DeviceScanScreen(
     viewModel: BluetoothViewModel = hiltViewModel(),
-//    navController: NavController,
-//    navBackStackEntry: NavBackStackEntry,
-    onClick: () -> Unit
+    navController: NavController,
+    navBackStackEntry: NavBackStackEntry,
 ) {
 
     val state = viewModel.state.collectAsState()
@@ -36,8 +33,7 @@ fun DeviceScanScreen(
 
     LaunchedEffect(state.value.connectionStatus, deviceAddress) {
         if (state.value.connectionStatus == ConnectionState.CONNECTED && deviceAddress.isNotEmpty()) {
-            onClick()
-//            navController.navigateTo(Route.ChatScreen.passData(deviceAddress), navBackStackEntry)
+            navController.navigateTo(Route.ChatScreen.passData(deviceAddress), navBackStackEntry)
         }
     }
 

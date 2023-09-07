@@ -57,7 +57,7 @@ fun ChatScreen(
             state.value.chatMessages.forEach {
                 ChatBubble(
                     message = it ?: MessageDataClass(),
-                    modifier = Modifier.align(if (it?.isFromLocalUser == true) Alignment.End else Alignment.Start)
+                    modifier = Modifier.align(if (it?.isFromLocalUser == true) Alignment.Start else Alignment.End)
                 )
             }
         }

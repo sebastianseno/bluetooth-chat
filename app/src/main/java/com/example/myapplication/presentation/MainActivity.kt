@@ -81,29 +81,29 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             val navController: NavHostController = rememberNavController()
-            val viewModel = hiltViewModel<BluetoothViewModel>()
-            val state = viewModel.state.collectAsState()
-            var isChat by rememberSaveable { mutableStateOf(false) }
+//            val viewModel = hiltViewModel<BluetoothViewModel>()
+//            val state = viewModel.state.collectAsState()
+//            var isChat by rememberSaveable { mutableStateOf(false) }
 
             MyApplicationTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    if (isChat) {
-                        ChatScreen(deviceAddress = "")
-                    } else {
-                        DeviceScanScreen {
-                            isChat = true
-                        }
-                    }
-//                    NavHost(
-//                        navController = navController,
-//                        startDestination = Route.DeviceScanScreen.route,
-//                        modifier = Modifier.background(Color.White)
-//                    ) {
-//                        addNavigationGraph(navController)
+//                    if (isChat) {
+//                        ChatScreen(deviceAddress = "")
+//                    } else {
+//                        DeviceScanScreen {
+//                            isChat = true
+//                        }
 //                    }
+                    NavHost(
+                        navController = navController,
+                        startDestination = Route.DeviceScanScreen.route,
+                        modifier = Modifier.background(Color.White)
+                    ) {
+                        addNavigationGraph(navController)
+                    }
                 }
             }
         }
