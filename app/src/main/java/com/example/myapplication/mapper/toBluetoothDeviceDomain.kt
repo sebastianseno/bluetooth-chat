@@ -9,6 +9,5 @@ fun BluetoothDevice.toBluetoothDeviceDomain(): BluetoothDeviceDataClass {
     return BluetoothDeviceDataClass(
         name = name,
         address = address,
-
     )
 }

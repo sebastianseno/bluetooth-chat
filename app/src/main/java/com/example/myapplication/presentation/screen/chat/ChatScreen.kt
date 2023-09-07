@@ -33,7 +33,7 @@ fun ChatScreen(
     val systemUiController = rememberSystemUiController()
     val state = viewModel.state.collectAsState()
     LaunchedEffect(key1 = Unit, block = {
-        viewModel.waitForIncomingConnections()
+        viewModel.startServer()
     })
     Box(
         Modifier

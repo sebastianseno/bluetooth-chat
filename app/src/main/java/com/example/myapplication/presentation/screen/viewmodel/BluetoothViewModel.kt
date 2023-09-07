@@ -1,10 +1,19 @@
 package com.example.myapplication.presentation.screen.viewmodel
 
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.le.*
+import android.os.Handler
+import android.os.ParcelUuid
+import android.util.Log
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.bluetooth.BluetoothGattController
+import com.example.myapplication.bluetooth.BluetoothGattController.Companion.SERVICE_UUID
 import com.example.myapplication.domain.BluetoothDeviceDataClass
 import com.example.myapplication.domain.ConnectionResult
+import com.example.myapplication.mapper.toBluetoothDeviceDomain
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
@@ -26,40 +35,35 @@ class BluetoothViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(BluetoothUiState())
     private val _bleMessage = bluetoothController.connectMessage
-    private var deviceConnectionJob: Job? = null
 
-    init {
-        waitForIncomingConnections()
-    }
+//    init {
+//        waitForIncomingConnections()
+//    }
 
     val state = combine(
         bluetoothController.scannedDevices,
-        bluetoothController.pairedDevices,
+        bluetoothController.messageData,
         _state,
         _bleMessage,
-    ) { scannedDevices, pairedDevice, state, message ->
+
+    ) { scannedDevices, messageData, state, connectMessage ->
         state.copy(
             scannedDevices = scannedDevices,
-            connectionStatus = message,
-            chatMessages = state.chatMessages,
-            pairedDevices = pairedDevice
+            connectionStatus = connectMessage,
+//            chatMessages = messageData,
+
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), _state.value)
 
     fun startScan() {
         bluetoothController.startScan()
     }
-
-    fun connectToDevice(device: BluetoothDeviceDataClass) {
-        bluetoothController.connectToDevice(device)
+    fun startServer() {
+        bluetoothController.startServer()
     }
 
-    fun waitForIncomingConnections() {
-        viewModelScope.launch {
-            deviceConnectionJob = bluetoothController
-                .startGattServer()
-                .listen()
-        }
+    fun setCurrentUser(device: BluetoothDevice)  {
+        bluetoothController.setCurrentChatConnection(device = device)
     }
 
     fun sendMessage(message: String, deviceAddress: String) {

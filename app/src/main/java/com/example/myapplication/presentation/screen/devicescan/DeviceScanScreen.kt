@@ -1,6 +1,6 @@
 package com.example.myapplication.presentation.screen.devicescan
 
-import android.util.Log
+import android.bluetooth.BluetoothDevice
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -25,8 +25,9 @@ import com.google.accompanist.systemuicontroller.rememberSystemUiController
 @Composable
 fun DeviceScanScreen(
     viewModel: BluetoothViewModel = hiltViewModel(),
-    navController: NavController,
-    navBackStackEntry: NavBackStackEntry
+//    navController: NavController,
+//    navBackStackEntry: NavBackStackEntry,
+    onClick: () -> Unit
 ) {
 
     val state = viewModel.state.collectAsState()
@@ -34,10 +35,13 @@ fun DeviceScanScreen(
     val systemUiController = rememberSystemUiController()
 
     LaunchedEffect(state.value.connectionStatus, deviceAddress) {
-        if (state.value.connectionStatus == ConnectionState.CONNECTED) {
-            navController.navigateTo(Route.ChatScreen.passData(deviceAddress), navBackStackEntry)
+        if (state.value.connectionStatus == ConnectionState.CONNECTED && deviceAddress.isNotEmpty()) {
+            onClick()
+//            navController.navigateTo(Route.ChatScreen.passData(deviceAddress), navBackStackEntry)
         }
     }
+
+
     Box(
         Modifier
             .padding(18.dp)
@@ -53,14 +57,13 @@ fun DeviceScanScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             state.value.scannedDevices.forEach {
-                val name =  it.name ?: it.address ?: "Tidak dikenal"
+                val name = it.name ?: it.address ?: "Tidak dikenal"
                 Device(
                     deviceName = name,
-                    isLoading = it.address == deviceAddress &&
-                            state.value.connectionStatus == ConnectionState.CONNECTING
+                    isLoading = it.address == deviceAddress && state.value.connectionStatus == ConnectionState.CONNECTING
                 ) {
+                    viewModel.setCurrentUser(it)
                     deviceAddress = it.address ?: "empty"
-                    viewModel.connectToDevice(it)
                 }
             }
         }
@@ -68,13 +71,6 @@ fun DeviceScanScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
             verticalArrangement = Arrangement.spacedBy(15.dp)
         ) {
-            if (state.value.pairedDevices.isNotEmpty()) {
-                BlueFloatingButton(
-                    label = "Start Chat"
-                ) {
-                    navController.navigateTo(Route.ChatScreen.passData("null"), navBackStackEntry)
-                }
-            }
             FloatingButton {
                 viewModel.startScan()
             }

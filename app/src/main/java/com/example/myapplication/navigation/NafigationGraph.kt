@@ -11,9 +11,9 @@ import com.example.myapplication.presentation.screen.devicescan.DeviceScanScreen
 fun NavGraphBuilder.addNavigationGraph(
     navController: NavController
 ) {
-    composable(Route.DeviceScanScreen.route) {
-        DeviceScanScreen(navController = navController, navBackStackEntry = it)
-    }
+//    composable(Route.DeviceScanScreen.route) {
+//        DeviceScanScreen(navController = navController, navBackStackEntry = it)
+//    }
     composable(
         route = Route.ChatScreen.route,
         arguments = listOf(
