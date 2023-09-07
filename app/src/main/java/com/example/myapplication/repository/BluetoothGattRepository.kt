@@ -1,4 +1,4 @@
-package com.example.myapplication.bluetooth
+package com.example.myapplication.repository
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -11,19 +11,17 @@ import android.content.pm.PackageManager
 import android.os.ParcelUuid
 import android.util.Log
 import com.example.myapplication.domain.*
-import com.example.myapplication.mapper.toBluetoothDeviceDomain
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import java.io.IOException
 import java.util.*
 import javax.inject.Inject
 
 
 @SuppressLint("MissingPermission")
-class BluetoothGattController @Inject constructor(
+class BluetoothGattRepository @Inject constructor(
     private val context: Context,
     private val application: Application,
     private val scope: CoroutineScope
@@ -43,7 +41,6 @@ class BluetoothGattController @Inject constructor(
     private var advertiser: BluetoothLeAdvertiser? = null
     private var advertiseSettings: AdvertiseSettings = buildAdvertiseSettings()
     private var advertiseData: AdvertiseData = buildAdvertiseData()
-    private var currentDevice: BluetoothDevice? = null
 
 
     val connectMessage = MutableStateFlow(ConnectionState.DISCONNECTED)
@@ -51,15 +48,14 @@ class BluetoothGattController @Inject constructor(
     private val scanCallback = object : ScanCallback() {
         override fun onScanFailed(errorCode: Int) {
             super.onScanFailed(errorCode)
-//            if (errorCode == 1) {
-//                stopDiscovery()
-//            }
+            if (errorCode == 1) {
+                stopScan()
+            }
         }
 
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             super.onScanResult(callbackType, result)
             _scannedDevices.update { devices ->
-                Log.i("senox", result.device.toString())
                 val newDevice = result.device
                 if (newDevice in devices) devices else devices + newDevice
             }
@@ -73,7 +69,6 @@ class BluetoothGattController @Inject constructor(
                     if (newDevice in devices) devices else devices + newDevice
                 }
             }
-            Log.i("seno", results.toString())
         }
     }
 
@@ -238,14 +233,14 @@ class BluetoothGattController @Inject constructor(
     }
 
 
-    override fun stopDiscovery() {
+    override fun stopScan() {
         if (!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
             return
         }
-//        if (bluetoothAdapter?.isEnabled == true) {
-//            val btScanner = bluetoothAdapter?.bluetoothLeScanner
-//            btScanner?.stopScan(scanCallback)
-//        }
+        if (bluetoothAdapter?.isEnabled == true) {
+            val btScanner = bluetoothAdapter?.bluetoothLeScanner
+            btScanner?.stopScan(scanCallback)
+        }
 
     }
 
@@ -265,9 +260,6 @@ class BluetoothGattController @Inject constructor(
     }
 
     override fun connectToDevice(device: BluetoothDevice?) {
-//        if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
-//            return
-//        }
         device?.connectGatt(application, false, bluetoothGattCallback)
     }
 
@@ -296,16 +288,6 @@ class BluetoothGattController @Inject constructor(
         }
     }
 
-    override fun closeConnection() {
-        currentClientSocket?.close()
-        currentServerSocket?.close()
-        currentClientSocket = null
-        currentServerSocket = null
-    }
-
-    override fun release() {
-    }
-
     private fun hasPermission(permission: String): Boolean {
         return context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
     }
@@ -313,6 +295,10 @@ class BluetoothGattController @Inject constructor(
     private fun startAdvertisement() {
         advertiser = bluetoothAdapter?.bluetoothLeAdvertiser
         advertiser?.startAdvertising(advertiseSettings, advertiseData, deviceAdvertiseCallback)
+    }
+
+    private fun stopAdvertising() {
+        advertiser?.stopAdvertising(deviceAdvertiseCallback)
     }
 
     private fun buildAdvertiseData(): AdvertiseData {

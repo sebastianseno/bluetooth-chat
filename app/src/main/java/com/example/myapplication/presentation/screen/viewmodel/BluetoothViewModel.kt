@@ -1,19 +1,10 @@
 package com.example.myapplication.presentation.screen.viewmodel
 
 import android.bluetooth.BluetoothDevice
-import android.bluetooth.le.*
-import android.os.Handler
-import android.os.ParcelUuid
-import android.util.Log
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.myapplication.bluetooth.BluetoothGattController
-import com.example.myapplication.bluetooth.BluetoothGattController.Companion.SERVICE_UUID
-import com.example.myapplication.domain.BluetoothDeviceDataClass
+import com.example.myapplication.repository.BluetoothGattRepository
 import com.example.myapplication.domain.ConnectionResult
-import com.example.myapplication.mapper.toBluetoothDeviceDomain
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
@@ -30,15 +21,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class BluetoothViewModel @Inject constructor(
-    private val bluetoothController: BluetoothGattController,
+    private val bluetoothController: BluetoothGattRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(BluetoothUiState())
     private val _bleMessage = bluetoothController.connectMessage
-
-//    init {
-//        waitForIncomingConnections()
-//    }
+    private var deviceConnectionJob: Job? = null
 
     val state = combine(
         bluetoothController.scannedDevices,
@@ -50,8 +38,6 @@ class BluetoothViewModel @Inject constructor(
         state.copy(
             scannedDevices = scannedDevices,
             connectionStatus = connectMessage,
-//            chatMessages = messageData,
-
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), _state.value)
 
@@ -72,7 +58,13 @@ class BluetoothViewModel @Inject constructor(
         }
     }
 
-    private fun Flow<ConnectionResult>.listen(): Job {
+    fun listenBluetoothServer() {
+        viewModelScope.launch {
+        deviceConnectionJob = bluetoothController
+            .messageData.listen()
+        }
+    }
+    private fun Flow<ConnectionResult?>.listen(): Job {
         return onEach { result ->
             when (result) {
                 ConnectionResult.ConnectionEstablished -> {
@@ -91,8 +83,7 @@ class BluetoothViewModel @Inject constructor(
                         )
                     }
                 }
-
-                is ConnectionResult.Error -> {
+                else -> {
                     _state.update {
                         it.copy(
                             isConnected = false,
@@ -102,7 +93,7 @@ class BluetoothViewModel @Inject constructor(
                 }
             }
         }.catch { throwable ->
-            bluetoothController.closeConnection()
+            bluetoothController.startServer()
             _state.update {
                 it.copy(
                     isConnected = false,
@@ -112,4 +103,8 @@ class BluetoothViewModel @Inject constructor(
         }.launchIn(viewModelScope)
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        bluetoothController.stopScan()
+    }
 }

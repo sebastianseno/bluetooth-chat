@@ -12,9 +12,8 @@ interface BluetoothController {
     fun startScan()
     fun startServer()
     fun setCurrentChatConnection(device: BluetoothDevice?)
-    fun stopDiscovery()
+    fun stopScan()
     fun connectToDevice(device: BluetoothDevice?)
     suspend fun trySendMessage(message: String, deviceAddress: String)
-    fun closeConnection()
-    fun release()
+
 }

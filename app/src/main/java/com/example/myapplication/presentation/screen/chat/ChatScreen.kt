@@ -34,6 +34,7 @@ fun ChatScreen(
     val state = viewModel.state.collectAsState()
     LaunchedEffect(key1 = Unit, block = {
         viewModel.startServer()
+        viewModel.listenBluetoothServer()
     })
     Box(
         Modifier

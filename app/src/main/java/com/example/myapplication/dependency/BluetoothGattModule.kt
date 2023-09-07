@@ -2,7 +2,7 @@ package com.example.myapplication.dependency
 
 import android.app.Application
 import android.content.Context
-import com.example.myapplication.bluetooth.BluetoothGattController
+import com.example.myapplication.repository.BluetoothGattRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -31,7 +31,7 @@ object BluetoothGattModule {
         @ApplicationContext context: Context,
         application: Application,
         @ApplicationScope coroutineScope: CoroutineScope
-    ) = BluetoothGattController(context, application, coroutineScope)
+    ) = BluetoothGattRepository(context, application, coroutineScope)
 
 }
 

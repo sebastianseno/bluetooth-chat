@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.domain.MessageDataClass
@@ -25,10 +26,10 @@ fun ChatBubble(
         modifier = modifier
             .clip(
                 RoundedCornerShape(
-                    topStart = if (message.isFromLocalUser) 0.dp else 15.dp,
+                    topStart = if (message.isFromLocalUser) 15.dp else  0.dp,
                     topEnd = 15.dp,
                     bottomStart = 15.dp,
-                    bottomEnd = if (message.isFromLocalUser) 15.dp else 0.dp
+                    bottomEnd = if (message.isFromLocalUser) 0.dp  else  15.dp
                 )
             )
             .background(
@@ -48,4 +49,12 @@ fun ChatBubble(
             modifier = Modifier.widthIn(max = 250.dp)
         )
     }
+}
+
+@Preview
+@Composable
+fun ChatBubblePreview() {
+    ChatBubble(
+        message = MessageDataClass(message = "hai", senderName = "seno", isFromLocalUser = false)
+    )
 }
