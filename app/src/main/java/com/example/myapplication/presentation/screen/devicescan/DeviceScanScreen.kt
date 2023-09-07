@@ -3,6 +3,7 @@ package com.example.myapplication.presentation.screen.devicescan
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -49,16 +50,22 @@ fun DeviceScanScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            state.value.scannedDevices.forEach {
-                val name = it.name ?: it.address ?: "Tidak dikenal"
-                Device(
-                    deviceName = name,
-                    isLoading = it.address == deviceAddress && state.value.connectionStatus == ConnectionState.CONNECTING
-                ) {
-                    viewModel.setCurrentUser(it)
-                    deviceAddress = it.address ?: "empty"
+            if (state.value.isScanning) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                state.value.scannedDevices.forEach {
+                    val name = it.name ?: it.address ?: "Tidak dikenal"
+                    Device(
+                        deviceName = name,
+                        isLoading =  state.value.connectionStatus == ConnectionState.CONNECTING
+                    ) {
+                        viewModel.setCurrentUser(it)
+                        deviceAddress = it.address ?: "empty"
+                    }
                 }
             }
         }

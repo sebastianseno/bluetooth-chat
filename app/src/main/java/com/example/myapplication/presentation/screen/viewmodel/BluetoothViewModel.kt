@@ -3,19 +3,11 @@ package com.example.myapplication.presentation.screen.viewmodel
 import android.bluetooth.BluetoothDevice
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.myapplication.repository.BluetoothGattRepository
 import com.example.myapplication.domain.ConnectionResult
+import com.example.myapplication.repository.BluetoothGattRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -30,14 +22,14 @@ class BluetoothViewModel @Inject constructor(
 
     val state = combine(
         bluetoothController.scannedDevices,
-        bluetoothController.messageData,
         _state,
         _bleMessage,
-
-    ) { scannedDevices, messageData, state, connectMessage ->
+        bluetoothController.isScanning
+    ) { scannedDevices, state, connectMessage, isScanning ->
         state.copy(
             scannedDevices = scannedDevices,
             connectionStatus = connectMessage,
+            isScanning = isScanning
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), _state.value)
 

@@ -11,7 +11,6 @@ import android.content.pm.PackageManager
 import android.os.ParcelUuid
 import android.util.Log
 import com.example.myapplication.domain.*
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,14 +22,11 @@ import javax.inject.Inject
 @SuppressLint("MissingPermission")
 class BluetoothGattRepository @Inject constructor(
     private val context: Context,
-    private val application: Application,
-    private val scope: CoroutineScope
-) : BluetoothController {
+    private val application: Application
+) : ImplBluetoothRepository {
 
     private val _isConnected = MutableStateFlow(false)
 
-    private var currentServerSocket: BluetoothServerSocket? = null
-    private var currentClientSocket: BluetoothSocket? = null
     private val bluetoothManager by lazy {
         application.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
     }
@@ -49,12 +45,14 @@ class BluetoothGattRepository @Inject constructor(
         override fun onScanFailed(errorCode: Int) {
             super.onScanFailed(errorCode)
             if (errorCode == 1) {
+                _isScanning.value = false
                 stopScan()
             }
         }
 
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             super.onScanResult(callbackType, result)
+            _isScanning.value = false
             _scannedDevices.update { devices ->
                 val newDevice = result.device
                 if (newDevice in devices) devices else devices + newDevice
@@ -63,6 +61,7 @@ class BluetoothGattRepository @Inject constructor(
 
         override fun onBatchScanResults(results: List<ScanResult>) {
             super.onBatchScanResults(results)
+            _isScanning.value = false
             results.map { result ->
                 _scannedDevices.update { devices ->
                     val newDevice = result.device
@@ -198,9 +197,14 @@ class BluetoothGattRepository @Inject constructor(
     override val messageData: StateFlow<ConnectionResult?>
         get() = _messageData
 
+    private val _isScanning = MutableStateFlow(false)
+    override val isScanning: StateFlow<Boolean>
+        get() = _isScanning
+
 
     override fun startScan() {
         if (hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
+            _isScanning.value = true
             startServer()
             val btScanner = bluetoothAdapter?.bluetoothLeScanner
             btScanner?.startScan(buildScanFilters(), buildScanSettings(), scanCallback)

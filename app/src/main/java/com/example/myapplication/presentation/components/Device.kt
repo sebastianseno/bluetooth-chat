@@ -21,7 +21,7 @@ fun Device(
     isLoading: Boolean,
     onClick: () -> Unit
 ) {
-    Row {
+    Row (Modifier.fillMaxWidth()){
         Surface(
             modifier = Modifier.weight(2f),
             color = SoftGray,
@@ -60,6 +60,5 @@ fun Device(
                 )
             }
         }
-
     }
 }

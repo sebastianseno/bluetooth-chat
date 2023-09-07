@@ -13,23 +13,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import com.example.myapplication.domain.ConnectionState
 import com.example.myapplication.navigation.Route
 import com.example.myapplication.navigation.addNavigationGraph
-import com.example.myapplication.presentation.screen.chat.ChatScreen
-import com.example.myapplication.presentation.screen.devicescan.DeviceScanScreen
-import com.example.myapplication.presentation.screen.viewmodel.BluetoothViewModel
 import com.example.myapplication.presentation.theme.MyApplicationTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -81,22 +71,12 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             val navController: NavHostController = rememberNavController()
-//            val viewModel = hiltViewModel<BluetoothViewModel>()
-//            val state = viewModel.state.collectAsState()
-//            var isChat by rememberSaveable { mutableStateOf(false) }
-
             MyApplicationTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-//                    if (isChat) {
-//                        ChatScreen(deviceAddress = "")
-//                    } else {
-//                        DeviceScanScreen {
-//                            isChat = true
-//                        }
-//                    }
+
                     NavHost(
                         navController = navController,
                         startDestination = Route.DeviceScanScreen.route,
