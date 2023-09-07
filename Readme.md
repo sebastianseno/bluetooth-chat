@@ -13,7 +13,7 @@
 - Open Application.
 - Click scan now button to scan nearby devices.
 - Click connect now button to pair with another device. 
-
+  
   <img src="https://github.com/sebastianseno/bluetooth-chat/blob/main/screenshoot/Monosnap%2BImage%2B2023-09-06%2B20.48.54.png" width="300">
 
 - If system indicator turn into green that means you already connected and ready to chat.

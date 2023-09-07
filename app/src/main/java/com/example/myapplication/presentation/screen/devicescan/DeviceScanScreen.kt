@@ -1,23 +1,19 @@
 package com.example.myapplication.presentation.screen.devicescan
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavController
 import com.example.myapplication.domain.ConnectionState
+import com.example.myapplication.extension.navigateTo
+import com.example.myapplication.navigation.Route
 import com.example.myapplication.presentation.components.Device
 import com.example.myapplication.presentation.components.button.BlueFloatingButton
 import com.example.myapplication.presentation.components.button.FloatingButton
@@ -27,7 +23,8 @@ import com.google.accompanist.systemuicontroller.rememberSystemUiController
 @Composable
 fun DeviceScanScreen(
     viewModel: BluetoothViewModel = hiltViewModel(),
-    onNavigate: (address: String) -> Unit
+    navController: NavController,
+    navBackStackEntry: NavBackStackEntry
 ) {
 
     val state = viewModel.state.collectAsState()
@@ -36,7 +33,7 @@ fun DeviceScanScreen(
 
     LaunchedEffect(state.value.connectionStatus, deviceAddress) {
         if (state.value.connectionStatus == ConnectionState.CONNECTED) {
-            onNavigate(deviceAddress)
+            navController.navigateTo(Route.ChatScreen.passData(deviceAddress), navBackStackEntry)
         }
     }
     Box(
@@ -68,7 +65,7 @@ fun DeviceScanScreen(
                 BlueFloatingButton(
                     label = "Start Chat"
                 ) {
-                    onNavigate("null")
+                    navController.navigateTo(Route.ChatScreen.passData("null"), navBackStackEntry)
                 }
             }
             FloatingButton {

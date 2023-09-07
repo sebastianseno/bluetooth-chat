@@ -1,23 +1,18 @@
 package com.example.myapplication.navigation
 
+import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
-import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.example.myapplication.extension.navigateTo
 import com.example.myapplication.presentation.screen.chat.ChatScreen
 import com.example.myapplication.presentation.screen.devicescan.DeviceScanScreen
-import com.example.myapplication.presentation.screen.viewmodel.BluetoothViewModel
 
 fun NavGraphBuilder.addNavigationGraph(
-    navController: NavHostController,
-    viewModel: BluetoothViewModel
+    navController: NavController
 ) {
     composable(Route.DeviceScanScreen.route) {
-        DeviceScanScreen(viewModel = viewModel) { deviceAddress ->
-            navController.navigateTo(Route.ChatScreen.passData(deviceAddress), it)
-        }
+        DeviceScanScreen(navController = navController, navBackStackEntry = it)
     }
     composable(
         route = Route.ChatScreen.route,
@@ -28,7 +23,6 @@ fun NavGraphBuilder.addNavigationGraph(
         )
     ) {
         ChatScreen(
-            viewModel = viewModel,
             deviceAddress = it.arguments?.getString("device_address").orEmpty()
                 .removeSurrounding(prefix = "{", suffix = "}")
         )

@@ -15,13 +15,11 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.navigation.Route
 import com.example.myapplication.navigation.addNavigationGraph
-import com.example.myapplication.presentation.screen.viewmodel.BluetoothViewModel
 import com.example.myapplication.presentation.theme.MyApplicationTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -72,7 +70,6 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             val navController: NavHostController = rememberNavController()
-            val viewModel = hiltViewModel<BluetoothViewModel>()
             MyApplicationTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -83,7 +80,7 @@ class MainActivity : ComponentActivity() {
                         startDestination = Route.DeviceScanScreen.route,
                         modifier = Modifier.background(Color.White)
                     ) {
-                        addNavigationGraph(navController, viewModel)
+                        addNavigationGraph(navController)
                     }
                 }
             }
