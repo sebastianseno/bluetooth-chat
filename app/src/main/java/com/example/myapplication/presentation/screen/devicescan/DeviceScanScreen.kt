@@ -1,5 +1,7 @@
 package com.example.myapplication.presentation.screen.devicescan
 
+import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -21,6 +23,7 @@ import com.example.myapplication.presentation.components.button.FloatingButton
 import com.example.myapplication.presentation.screen.viewmodel.BluetoothViewModel
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
+@SuppressLint("MissingPermission")
 @Composable
 fun DeviceScanScreen(
     viewModel: BluetoothViewModel = hiltViewModel(),
@@ -33,6 +36,8 @@ fun DeviceScanScreen(
     val systemUiController = rememberSystemUiController()
 
     LaunchedEffect(state.value.connectionStatus, deviceAddress) {
+        Log.d("senoStatus", state.value.connectionStatus.name)
+        Log.d("senoAddress", deviceAddress)
         if (state.value.connectionStatus == ConnectionState.CONNECTED && deviceAddress.isNotEmpty()) {
             navController.navigateTo(Route.ChatScreen.passData(deviceAddress), navBackStackEntry)
         }
@@ -53,7 +58,12 @@ fun DeviceScanScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             if (state.value.isScanning) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, true),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator()
                 }
             } else {
@@ -61,10 +71,10 @@ fun DeviceScanScreen(
                     val name = it.name ?: it.address ?: "Tidak dikenal"
                     Device(
                         deviceName = name,
-                        isLoading =  state.value.connectionStatus == ConnectionState.CONNECTING
+                        isLoading = false
                     ) {
                         viewModel.setCurrentUser(it)
-                        deviceAddress = it.address ?: "empty"
+                        deviceAddress = name
                     }
                 }
             }

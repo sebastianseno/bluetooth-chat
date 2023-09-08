@@ -24,7 +24,8 @@ fun NavGraphBuilder.addNavigationGraph(
     ) {
         ChatScreen(
             deviceAddress = it.arguments?.getString("device_address").orEmpty()
-                .removeSurrounding(prefix = "{", suffix = "}")
+                .removeSurrounding(prefix = "{", suffix = "}"),
+            navController = navController
         )
     }
 }

@@ -1,9 +1,12 @@
 package com.example.myapplication.presentation.screen.chat
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -15,55 +18,78 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.example.myapplication.R
 import com.example.myapplication.domain.MessageDataClass
 import com.example.myapplication.presentation.components.ChatBubble
 import com.example.myapplication.presentation.screen.viewmodel.BluetoothViewModel
 import com.example.myapplication.presentation.theme.Blue
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 @Composable
 fun ChatScreen(
     viewModel: BluetoothViewModel = hiltViewModel(),
-    deviceAddress: String
+    deviceAddress: String,
+    navController: NavController
 ) {
     val message = rememberSaveable {
         mutableStateOf("")
     }
-    val systemUiController = rememberSystemUiController()
     val state = viewModel.state.collectAsState()
     LaunchedEffect(key1 = Unit, block = {
         viewModel.startServer()
         viewModel.listenBluetoothServer()
     })
+
     Box(
         Modifier
             .fillMaxSize()
-            .padding(16.dp)
     ) {
-        systemUiController.setStatusBarColor(
-            color = if (state.value.isConnected) {
-                Color.Green
-            } else {
-                Color.Red
-            }
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            state.value.chatMessages.forEach {
-                ChatBubble(
-                    message = it ?: MessageDataClass(),
-                    modifier = Modifier.align(if (it?.isFromLocalUser == true) Alignment.Start else Alignment.End)
-                )
+        Column(modifier = Modifier.fillMaxSize()) {
+            TopAppBar(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                backgroundColor = Blue,
+                navigationIcon = {
+                    Icon(
+                        modifier = Modifier
+                            .clickable {
+                                navController.popBackStack()
+                            }
+                            .fillMaxHeight()
+                            .padding(start = 8.dp),
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+                },
+                title = {
+                    Text(
+                        text = deviceAddress,
+                        color = Color.White
+                    )
+                }
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(horizontal = 16.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                state.value.chatMessages.forEach {
+                    ChatBubble(
+                        message = it ?: MessageDataClass(),
+                        modifier = Modifier.align(if (it?.isFromLocalUser == true) Alignment.Start else Alignment.End)
+                    )
+                }
             }
         }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = 16.dp)
                 .align(Alignment.BottomCenter),
         ) {
             TextField(
@@ -77,7 +103,10 @@ fun ChatScreen(
             )
             IconButton(
                 onClick = {
-                    viewModel.sendMessage(message = message.value, deviceAddress = deviceAddress)
+                    viewModel.sendMessage(
+                        message = message.value,
+                        deviceAddress = deviceAddress
+                    )
                     message.value = ""
                 }) {
                 Icon(

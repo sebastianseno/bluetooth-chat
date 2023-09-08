@@ -249,14 +249,15 @@ class BluetoothGattRepository @Inject constructor(
     }
 
     override fun startServer() {
-        Log.d("seno", "terpanggil")
-        bluetoothGattServer =
-            bluetoothManager.openGattServer(
-                context, gattServerCallback
-            ).apply {
-                addService(setupGattService())
-            }
-        startAdvertisement()
+        if (hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
+            bluetoothGattServer =
+                bluetoothManager.openGattServer(
+                    context, gattServerCallback
+                ).apply {
+                    addService(setupGattService())
+                }
+            startAdvertisement()
+        }
     }
 
     override fun setCurrentChatConnection(device: BluetoothDevice?) {

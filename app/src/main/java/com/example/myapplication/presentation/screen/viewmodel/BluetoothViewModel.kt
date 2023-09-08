@@ -36,6 +36,7 @@ class BluetoothViewModel @Inject constructor(
     fun startScan() {
         bluetoothController.startScan()
     }
+
     fun startServer() {
         bluetoothController.startServer()
     }
@@ -56,6 +57,11 @@ class BluetoothViewModel @Inject constructor(
             .messageData.listen()
         }
     }
+
+    fun clearChat() {
+
+    }
+
     private fun Flow<ConnectionResult?>.listen(): Job {
         return onEach { result ->
             when (result) {
