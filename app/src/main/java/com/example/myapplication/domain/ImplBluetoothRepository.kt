@@ -13,6 +13,8 @@ interface ImplBluetoothRepository {
     fun startServer()
     fun setCurrentChatConnection(device: BluetoothDevice?)
     fun stopScan()
+
+    fun close()
     fun connectToDevice(device: BluetoothDevice?)
     suspend fun trySendMessage(message: String, deviceAddress: String)
 

@@ -1,5 +1,6 @@
 package com.example.myapplication.presentation.screen.chat
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -44,6 +45,10 @@ fun ChatScreen(
         Modifier
             .fillMaxSize()
     ) {
+        BackHandler(true) {
+            navController.popBackStack()
+            viewModel.clearChat()
+        }
         Column(modifier = Modifier.fillMaxSize()) {
             TopAppBar(
                 modifier = Modifier
@@ -54,6 +59,7 @@ fun ChatScreen(
                         modifier = Modifier
                             .clickable {
                                 navController.popBackStack()
+                                viewModel.clearChat()
                             }
                             .fillMaxHeight()
                             .padding(start = 8.dp),

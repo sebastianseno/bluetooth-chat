@@ -59,7 +59,7 @@ class BluetoothViewModel @Inject constructor(
     }
 
     fun clearChat() {
-
+//        bluetoothController.close()
     }
 
     private fun Flow<ConnectionResult?>.listen(): Job {

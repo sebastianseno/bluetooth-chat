@@ -108,6 +108,8 @@ class BluetoothGattRepository @Inject constructor(
                 offset,
                 value
             )
+            Log.d("senoServera", "hai")
+
             if (characteristic?.uuid == MESSAGE_UUID) {
                 bluetoothGattServer?.sendResponse(
                     device,
@@ -265,7 +267,7 @@ class BluetoothGattRepository @Inject constructor(
     }
 
     override fun connectToDevice(device: BluetoothDevice?) {
-        device?.connectGatt(application, false, bluetoothGattCallback)
+        device?.connectGatt(application, false, bluetoothGattCallback )
     }
 
     override suspend fun trySendMessage(message: String, deviceAddress: String) {
@@ -319,6 +321,13 @@ class BluetoothGattRepository @Inject constructor(
             .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_POWER)
             .setTimeout(0)
             .build()
+    }
+
+    override fun close() {
+        gattClient?.let { gatt ->
+            gatt.close()
+            gattClient = null
+        }
     }
 
     companion object {
